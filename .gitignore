@@ -1,3 +1,5 @@
 /nest-graphql
 /postgres-pgadmin/pgadmin
 /postgres-pgadmin/postgres
+/cron-ticker/node_modules
+/cron-ticker/package-lock.json
