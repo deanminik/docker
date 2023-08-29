@@ -1,35 +1,28 @@
-#1. We are going to work in the directory app, it is created by alpine
-# Build this based on my local architecture
-# FROM node:19.2-alpine3.16 
 
-# Force to select the architecture linux/amd64
-# FROM --platform=linux/amd64 node:19.2-alpine3.16
-
-# Use all architectures availables
-FROM --platform=$BUILDPLATFORM node:19.2-alpine3.16
-
-#2. Change the directoy to the app, this is like cd
+# To this part, I'll call it as "deps" this will be the name of the server
+# Development dependencies
+FROM node:19.2-alpine3.16 as deps 
 WORKDIR /app 
-
-#3. Dest /app with those files
-# COPY app.js package.json ./
-
-# . . = Means the first dot, copy all folder and the second dot, place, so the current location
-COPY . . 
-
-#4. Then install all node dependencies written in package.json
+COPY package.json ./
 RUN npm install 
 
-#4.1 Run test
+# Build and test 
+FROM node:19.2-alpine3.16 as builder 
+WORKDIR /app 
+COPY --from=deps /app/node_modules /app/node_modules
+COPY . . 
 RUN npm run test
 
-#4.2 Delete files and directories not necessary
-RUN rm -rf test
-#Here we delete the dev node dependencies 
-RUN rm -rf node_modules  
-# Here install only productions node packages without dependencies for dev environment 
+# Dependencies only for production 
+FROM node:19.2-alpine3.16 as prod-deps 
+WORKDIR /app 
+COPY package.json ./
 RUN npm install --prod
 
-#5. Execute your node project npm start if add it in the package.json or node app.js
-#This command tells to docker, hei run in the container this command
+# Execute the app 
+FROM node:19.2-alpine3.16 as runner 
+WORKDIR /app 
+COPY --from=prod-deps /app/node_modules /app/node_modules
+COPY app.js ./
+COPY tasks/ ./tasks
 CMD [ "node","app.js" ]
